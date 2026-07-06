@@ -296,6 +296,7 @@
     <select id="grape" aria-label="Filter by grape"><option value="">All grapes</option></select>
     <select id="region" aria-label="Filter by region"><option value="">All regions</option></select>
     <select id="price" aria-label="Filter by price"><option value="">Any price</option></select>
+    <select id="vintage" aria-label="Filter by vintage"><option value="">Any vintage</option></select>
     <select id="sort" aria-label="Sort">
       <option value="new">Newest first</option>
       <option value="plo">Price: low &rarr; high</option>
@@ -388,6 +389,22 @@
     });
   })();
 
+  /* ---- vintage buckets ---- */
+  var VBRACKETS = [
+    { key: "2020s", label: "2020s", lo: 2020, hi: 2030 },
+    { key: "2010s", label: "2010s", lo: 2010, hi: 2020 },
+    { key: "older", label: "Older", lo: 0, hi: 2010 }
+  ];
+  (function () {
+    var sel = document.getElementById("vintage");
+    VBRACKETS.forEach(function (b) {
+      var n = wines.filter(function (w) { return w.vintage != null && w.vintage >= b.lo && w.vintage < b.hi; }).length;
+      var o = document.createElement("option");
+      o.value = b.key; o.textContent = b.label + " (" + n + ")";
+      sel.appendChild(o);
+    });
+  })();
+
   /* ---- find-in-shop search links ---- */
   var SHOP_URLS = {
     "Tesco": "https://www.tesco.com/groceries/en-GB/search?query=",
@@ -414,7 +431,7 @@
   });
 
   /* ---- filtering + rendering ---- */
-  var state = { q: "", v: "all", shop: "", grape: "", region: "", price: "", sort: "new", showAll: false };
+  var state = { q: "", v: "all", shop: "", grape: "", region: "", price: "", vintage: "", sort: "new", showAll: false };
   var CAP = 200;
   var VORDER = { class: 0, pass: 1, arse: 2 };
 
@@ -432,6 +449,11 @@
       var b = null;
       for (var i = 0; i < BRACKETS.length; i++) if (BRACKETS[i].key === state.price) b = BRACKETS[i];
       if (!b || w.price == null || w.price < b.lo || w.price >= b.hi) return false;
+    }
+    if (state.vintage) {
+      var vb = null;
+      for (var j = 0; j < VBRACKETS.length; j++) if (VBRACKETS[j].key === state.vintage) vb = VBRACKETS[j];
+      if (!vb || w.vintage == null || w.vintage < vb.lo || w.vintage >= vb.hi) return false;
     }
     if (state.q) {
       var hay = [w.name, w.grape, w.region, w.country, w.shop, w.wine_type, w.quote, w.vtitle].join(" ").toLowerCase();
@@ -506,6 +528,9 @@
   });
   document.getElementById("price").addEventListener("change", function () {
     state.price = this.value; state.showAll = false; render();
+  });
+  document.getElementById("vintage").addEventListener("change", function () {
+    state.vintage = this.value; state.showAll = false; render();
   });
   // ×N badge: show every review of that wine (rows re-render, so delegate)
   document.getElementById("list").addEventListener("click", function (e) {
