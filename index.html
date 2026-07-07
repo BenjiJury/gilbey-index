@@ -311,7 +311,7 @@
   <button class="showall" id="showall" hidden>Show all matching wines</button>
 
   <footer>
-    <p>Verdicts, wisdom and wine belong to <a href="https://www.youtube.com/@tomgilbeywine" rel="noopener">Tom Gilbey</a> &mdash; this index was distilled from his videos with much love, by Ben &amp; a robot. Prices as quoted at review time. Snapshot: 6 July 2026.</p>
+    <p>Verdicts, wisdom and wine belong to <a href="https://www.youtube.com/@tomgilbeywine" rel="noopener">Tom Gilbey</a> &mdash; this index was distilled from his videos with much love, by Ben &amp; a robot. Prices as quoted at review time. Snapshot: 7 July 2026.</p>
   </footer>
 </div>
 
@@ -456,7 +456,7 @@
       if (!vb || w.vintage == null || w.vintage < vb.lo || w.vintage >= vb.hi) return false;
     }
     if (state.q) {
-      var hay = [w.name, w.grape, w.region, w.country, w.shop, w.wine_type, w.quote, w.vtitle].join(" ").toLowerCase();
+      var hay = [w.name, w.grape, w.region, w.country, w.shop, w.wine_type, w.quote, w.rating_raw, w.vtitle].join(" ").toLowerCase();
       if (hay.indexOf(state.q) === -1) return false;
     }
     return true;
@@ -474,6 +474,10 @@
   }
   function metaLine(w) {
     return [w.wine_type, w.grape, w.region, w.country, w.vintage].filter(Boolean).join(" \u00B7 ");
+  }
+  function quoteText(w) {
+    // unrated wines with no quote: surface the raw verdict in full instead
+    return w.quote || (!w.rating && w.rating_raw) || "";
   }
   function pill(w) {
     if (w.rating) return '<span class="pill p-' + w.rating + '">' + w.rating + "</span>";
@@ -503,7 +507,7 @@
       return '<div class="row">' +
         '<div><p class="name">' + esc(w.name || "") + xn + '</p>' +
         (metaLine(w) ? '<p class="meta">' + esc(metaLine(w)) + "</p>" : "") +
-        (w.quote ? '<p class="quote">\u201C' + esc(w.quote) + '\u201D</p>' : "") + "</div>" +
+        (quoteText(w) ? '<p class="quote">\u201C' + esc(quoteText(w)) + '\u201D</p>' : "") + "</div>" +
         shopHtml(w, "shop") +
         '<span class="price">' + (w.price != null ? "\u00A3" + w.price.toFixed(2) : "") + "</span>" +
         '<div class="pillwrap">' + pill(w) + shopHtml(w, "mshop") + "</div>" +
