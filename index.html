@@ -209,8 +209,16 @@
   @media (max-width: 640px) {
     .row { grid-template-columns: minmax(0, 1fr) 84px 34px; }
     .row .shop { display: none; }
-    .row .pillwrap { grid-column: 1; grid-row: 2; justify-self: start; display: flex; gap: 10px; align-items: center; }
-    .row .pill { justify-self: start; }
+    /* justify-self left at its default (stretch, not "start") so .pillwrap's
+       box actually fills its grid column instead of shrinking to fit its own
+       content — otherwise .pill's max-width:100% has no definite width to
+       resolve against, its overflow:hidden/ellipsis never kicks in, and an
+       unrated wine's long raw-verdict quote (.pill.p-none) blows out the
+       whole row, and with it the page's layout viewport on mobile. Flex's
+       own default justify-content:flex-start already left-aligns the pill
+       within that now-full-width box, so the visual result is unchanged. */
+    .row .pillwrap { grid-column: 1; grid-row: 2; display: flex; gap: 10px; align-items: center; min-width: 0; }
+    .row .pill { min-width: 0; }
     .row .mshop { font-size: 12px; color: var(--muted); }
   }
   @media (min-width: 641px) {
