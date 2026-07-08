@@ -158,15 +158,22 @@
   .list { border-top: 1px solid var(--line); }
   .row {
     display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) 110px 72px 92px 34px;
+    grid-template-columns: minmax(0, 1fr) 110px 72px 92px 34px;
     gap: 14px; align-items: center;
     padding: 12px 6px;
     border-bottom: 1px solid var(--line);
   }
+  /* Shopping mode adds a leading checkbox column — off by default so the
+     page looks exactly as it did before this feature existed. */
+  body.shopping-mode .row {
+    grid-template-columns: 28px minmax(0, 1fr) 110px 72px 92px 34px;
+  }
   .row .cart-check {
+    display: none;
     justify-self: center; width: 17px; height: 17px; margin: 0;
     accent-color: var(--accent); cursor: pointer;
   }
+  body.shopping-mode .row .cart-check { display: inline-block; }
   .row .cart-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .row:hover { background: var(--row-hover); }
   /* overflow-wrap: same defensive purpose as .pill's overflow:hidden fix —
@@ -217,7 +224,8 @@
   .row .yt:hover { text-decoration: underline; }
 
   @media (max-width: 640px) {
-    .row { grid-template-columns: 28px minmax(0, 1fr) 84px 34px; }
+    .row { grid-template-columns: minmax(0, 1fr) 84px 34px; }
+    body.shopping-mode .row { grid-template-columns: 28px minmax(0, 1fr) 84px 34px; }
     .row .shop { display: none; }
     /* justify-self left at its default (stretch, not "start") so .pillwrap's
        box actually fills its grid column instead of shrinking to fit its own
@@ -227,8 +235,10 @@
        whole row, and with it the page's layout viewport on mobile. Flex's
        own default justify-content:flex-start already left-aligns the pill
        within that now-full-width box, so the visual result is unchanged.
-       grid-column is 2, not 1 — the cart checkbox column now occupies 1. */
-    .row .pillwrap { grid-column: 2; grid-row: 2; display: flex; gap: 10px; align-items: center; min-width: 0; }
+       grid-column is 1 by default (name block); in Shopping mode the cart
+       checkbox column occupies 1, so pillwrap moves to 2. */
+    .row .pillwrap { grid-column: 1; grid-row: 2; display: flex; gap: 10px; align-items: center; min-width: 0; }
+    body.shopping-mode .row .pillwrap { grid-column: 2; }
     .row .pill { min-width: 0; }
     .row .mshop { font-size: 12px; color: var(--muted); }
     /* Selects/chips otherwise size to their own content (flex default
@@ -264,6 +274,7 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
   }
   .cart-fab:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  body.shopping-mode .cart-fab { outline: 2px solid var(--ink); outline-offset: 2px; }
   .cart-backdrop {
     position: fixed; inset: 0; z-index: 30;
     background: rgba(0, 0, 0, 0.45);
@@ -282,6 +293,13 @@
     padding: 18px 20px 12px; border-bottom: 1px solid var(--line);
   }
   .cart-panel h2 { font-size: 18px; margin: 0; }
+  .cart-header-actions { display: flex; align-items: center; gap: 10px; }
+  .cart-exit-mode {
+    font: inherit; font-size: 12.5px; cursor: pointer;
+    background: none; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 12px;
+  }
   .cart-close {
     font: inherit; font-size: 22px; line-height: 1; cursor: pointer;
     background: none; border: none; color: var(--muted); padding: 4px;
@@ -399,7 +417,10 @@
   <div class="cart-panel" id="cart-panel" role="dialog" aria-modal="true" aria-label="Shopping list">
     <header>
       <h2>Shopping list</h2>
-      <button class="cart-close" id="cart-close" aria-label="Close">&times;</button>
+      <div class="cart-header-actions">
+        <button class="cart-exit-mode" id="cart-exit-mode">Exit shopping mode</button>
+        <button class="cart-close" id="cart-close" aria-label="Close">&times;</button>
+      </div>
     </header>
     <div class="cart-body" id="cart-body"></div>
     <div class="cart-actions">
@@ -630,6 +651,9 @@
   }
 
   /* ---- shopping list (cart) ---- */
+  // Not persisted — every fresh page load starts in the plain,
+  // pre-shopping-list view; only the cart's contents persist.
+  var shoppingMode = false;
   var CART_KEY = "gilbey-cart-v1";
   var cart = (function () {
     var saved = [];
@@ -684,8 +708,18 @@
     cartExportBtn.disabled = !shops.length;
   }
   document.getElementById("cart-fab").addEventListener("click", function () {
+    if (!shoppingMode) {
+      shoppingMode = true;
+      document.body.classList.add("shopping-mode");
+      return;
+    }
     cartBackdrop.hidden = false;
     renderCartPanel();
+  });
+  document.getElementById("cart-exit-mode").addEventListener("click", function () {
+    shoppingMode = false;
+    document.body.classList.remove("shopping-mode");
+    cartBackdrop.hidden = true;
   });
   document.getElementById("cart-close").addEventListener("click", function () { cartBackdrop.hidden = true; });
   cartBackdrop.addEventListener("click", function (e) {
