@@ -259,6 +259,13 @@
     .row .pillwrap { display: contents; }
   }
 
+  /* The [hidden] companion rule is REQUIRED: an explicit `display` here beats
+     the hidden attribute's UA `display:none`, so render()'s
+     `showall.hidden = ...` had no visual effect and the button sat there
+     permanently — offering to show all 19 of 19 matching wines. Same trap the
+     insights/cart backdrop hit; every rule that sets display on a
+     conditionally-hidden element needs this pair. */
+  .showall[hidden] { display: none; }
   .showall {
     display: block; margin: 22px auto 0; cursor: pointer;
     font: inherit; font-size: 14px;
@@ -446,7 +453,7 @@
   <button class="showall" id="showall" hidden>Show all matching wines</button>
 
   <footer>
-    <p>Verdicts, wisdom and wine belong to <a href="https://www.youtube.com/@tomgilbeywine" rel="noopener">Tom Gilbey</a> &mdash; this index was distilled from his videos. Prices as quoted at review time. Snapshot: 9 August 2026.</p>
+    <p>Verdicts, wisdom and wine belong to <a href="https://www.youtube.com/@tomgilbeywine" rel="noopener">Tom Gilbey</a> &mdash; this index was distilled from his videos. Prices as quoted at review time. Snapshot: 10 August 2026.</p>
   </footer>
 </div>
 
@@ -487,6 +494,14 @@
 <script>
 (function () {
   "use strict";
+  // true only on the Authelia-gated private surface (wine.home.lan). The public
+  // snapshot republishes a named third party's ratings, so its badge is
+  // de-branded by design; privately, naming the source and the product it
+  // matched to is what lets you spot a bad match at a glance. This flag is the
+  // ONLY behavioural difference between the two surfaces — see
+  // wine/share/build.py, which also withholds vivino_match_name from the
+  // public JSON entirely rather than merely leaving it unrendered.
+  var PRIVATE = false;
   // Shop/grape spelling variants are already normalized in the JSON by
   // wine/share/build.py (shares wine/db.py's SHOP_FIX/GRAPE_FIX with the
   // webapp) — no client-side fixup needed.
@@ -716,9 +731,19 @@
     var r = Number(w.vivino_rating);
     if (!r || isNaN(r) || !/^https?:\/\//i.test(w.vivino_url || "")) return "";
     var count = w.vivino_ratings_count ? esc(String(w.vivino_ratings_count)) : "";
+    // Both branches keep all three defences above; only the wording differs.
+    var title, label;
+    if (PRIVATE) {
+      title = (count ? count + " Vivino ratings" : "Vivino");
+      if (w.vivino_match_name) title += ' — matched to "' + w.vivino_match_name + '"';
+      label = "Vivino " + r.toFixed(1) + "★";
+    } else {
+      title = count ? count + " ratings" : "";
+      label = "🍷 " + r.toFixed(1);
+    }
     return '<a class="rating" href="' + esc(w.vivino_url) + '" target="_blank" rel="noopener"' +
-      (count ? ' title="' + count + ' ratings"' : "") +
-      '>🍷 ' + r.toFixed(1) + "</a>";
+      (title ? ' title="' + esc(title) + '"' : "") +
+      ">" + label + "</a>";
   }
   function render() {
     var hits = wines.filter(matches).sort(cmp);
@@ -889,6 +914,24 @@
         h += "<tr><td>" + esc(t.year) + "</td><td>" + t.class_pct + "%</td><td>" +
              t.pass_pct + "%</td><td>" + t.arse_pct + "%</td><td class='info-note'>n=" +
              t.rated + "</td></tr>";
+      });
+      h += "</table>";
+    }
+
+    if (s.shops.length) {
+      h += "<h3>By shop</h3><table><tr><th>Shop</th><th>Wines</th><th>Class</th><th>Arse</th></tr>";
+      s.shops.forEach(function (sh) {
+        h += "<tr><td>" + esc(sh.shop) + "</td><td>" + sh.n + "</td><td>" +
+             Math.round(100 * sh.class_n / sh.n) + "%</td><td>" +
+             Math.round(100 * sh.arse_n / sh.n) + "%</td></tr>";
+      });
+      h += "</table><p class='info-note'>Shops with at least 3 reviewed wines.</p>";
+    }
+
+    if (s.countries.length) {
+      h += "<h3>Countries</h3><table>";
+      s.countries.forEach(function (c) {
+        h += "<tr><td>" + esc(c.country) + "</td><td>" + c.n + "</td></tr>";
       });
       h += "</table>";
     }
