@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Deliberately unlisted, not secret: anyone with the link gets the full page,
+     but it should not turn up in a search for the author's name or this one.
+     Paired with a robots.txt written by scripts/update_gilbey_page.sh — the
+     meta tag stops indexing, robots.txt stops the crawl. -->
+<meta name="robots" content="noindex, nofollow">
 <title>The Gilbey Wine Index</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍷</text></svg>">
 <style>
@@ -498,13 +503,12 @@
 <script>
 (function () {
   "use strict";
-  // true only on the Authelia-gated private surface (wine.home.lan). The public
-  // snapshot republishes a named third party's ratings, so its badge is
-  // de-branded by design; privately, naming the source and the product it
-  // matched to is what lets you spot a bad match at a glance. This flag is the
-  // ONLY behavioural difference between the two surfaces — see
-  // wine/share/build.py, which also withholds vivino_match_name from the
-  // public JSON entirely rather than merely leaving it unrendered.
+  // False in this published snapshot. It republishes a third party's ratings,
+  // so the badge is de-branded by design; the authenticated build names the
+  // source and the product matched, which is what makes a bad match obvious.
+  // The only behavioural difference between the builds — see share/build.py,
+  // which withholds the matched-product column from this JSON entirely rather
+  // than merely leaving it unrendered.
   var PRIVATE = false;
   // Shop/grape spelling variants are already normalized in the JSON by
   // wine/share/build.py (shares wine/db.py's SHOP_FIX/GRAPE_FIX with the
